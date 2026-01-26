@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+python-multipart
+qdrant-client
+google-cloud-aiplatform
+pydantic
+pydantic-settings
+python-dotenv
+pandas
+openpyxl
+numpy
+aiohttp
+aiofiles
+chonkie
+pillow
