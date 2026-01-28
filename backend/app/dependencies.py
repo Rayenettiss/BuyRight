@@ -1,45 +1,30 @@
 """
 Dependency injection for FastAPI routes.
-Provides database sessions, authentication dependencies and other shared dependencies.
+Provides database sessions and authentication dependencies.
 """
 
-from typing import Generator, Annotated
+from typing import Generator, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session
 from jose import JWTError
 
-from config.settings import settings
-from app.models.user import User
+from app.database import SessionLocal  # ✅ Import from database.py instead
 from app.services.auth_service import verify_token
 
-# ────────────────────────────────────────────────
-# Database configuration
-# ────────────────────────────────────────────────
-
-engine = create_engine(
-    settings.database_url,
-    pool_pre_ping=True,           # Verify connections before using
-    echo=settings.debug,          # Log SQL queries in debug mode
-)
-
-# Create SessionLocal class for database sessions
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
-
-# Base class for ORM models
-Base = declarative_base()
+# OAuth2 scheme for token authentication
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 def get_db() -> Generator[Session, None, None]:
     """
     Dependency that provides a database session.
     Automatically closes session after request completes.
+    
+    Usage in routes:
+        @app.get("/items")
+        def get_items(db: Session = Depends(get_db)):
+            return db.query(Item).all()
     """
     db = SessionLocal()
     try:
@@ -48,71 +33,65 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-# ────────────────────────────────────────────────
-# JWT Authentication dependencies
-# ────────────────────────────────────────────────
-
-# OAuth2 scheme – used by FastAPI to read Bearer token
-# Points to your login endpoint (very important for Swagger UI)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
-
-def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
-) -> User:
+):
     """
-    Get current authenticated user from JWT bearer token.
-
-    Raises:
-        HTTPException 401 if:
-        - no token provided
-        - token invalid / expired / malformed
-        - user id not present in token
-        - user not found in database
+    Dependency that validates JWT token and returns current user.
+    Raises 401 if token is invalid or user not found.
+    
+    Usage in routes:
+        @app.get("/protected")
+        def protected_route(current_user: User = Depends(get_current_user)):
+            return {"user": current_user.email}
     """
+    # Import here to avoid circular import
+    from app.models.user import User
+    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-
+    
     try:
+        # Verify token and extract payload
         payload = verify_token(token)
         user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-
+    
+    # Get user from database
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
         raise credentials_exception
-
+    
     return user
 
 
-# ────────────────────────────────────────────────
-# Optional version – useful for public routes that can personalize
-# ────────────────────────────────────────────────
-
-def get_optional_current_user(
-    token: Annotated[str | None, Depends(oauth2_scheme)] = None,
+async def get_optional_current_user(
+    token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
-) -> User | None:
+) -> Optional["User"]:
     """
-    Returns current user if valid token is provided,
-    otherwise returns None (no exception raised)
+    Dependency that returns current user if token is valid, or None if not.
+    Does not raise 401 - useful for endpoints that work with or without auth.
+    
+    Usage in routes:
+        @app.get("/items")
+        def get_items(user: Optional[User] = Depends(get_optional_current_user)):
+            if user:
+                return {"items": get_personalized_items(user)}
+            else:
+                return {"items": get_public_items()}
     """
-    if token is None:
+    if not token:
         return None
-
+    
     try:
-        payload = verify_token(token)
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            return None
-    except JWTError:
+        return await get_current_user(token, db)
+    except HTTPException:
         return None
-
-    return db.query(User).filter(User.id == user_id).first()

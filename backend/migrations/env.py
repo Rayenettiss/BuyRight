@@ -17,10 +17,11 @@ sys.path.append(str(Path(__file__).parent.parent))
 from config.settings import settings
 
 # Import Base for autogenerate support
-from app.dependencies import Base
+from app.database import Base  # ✅ Changed from app.dependencies
 
 # Import all models here for autogenerate to detect them
-from app.models import User, Product  # ✅ Added Product model
+from app.models import User, Product
+
 # this is the Alembic Config object
 config = context.config
 

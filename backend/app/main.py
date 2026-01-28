@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import routers
-from app.routers import health, debug,auth
+from app.routers import health, debug,auth,ingestion
 
 # Import services
 from app.services.qdrant_service import qdrant_service
@@ -56,6 +56,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(debug.router)
 app.include_router(auth.router)
+app.include_router(ingestion.router)
 
 
 @app.get("/")

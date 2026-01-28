@@ -17,7 +17,9 @@ from qdrant_client.models import (
     Filter,
     FieldCondition,
     MatchValue,
+    PayloadSchemaType,
 )
+from uuid import UUID, uuid5, NAMESPACE_DNS
 
 from config.settings import settings
 
@@ -98,8 +100,8 @@ class QdrantService:
 
         # Correct ScalarQuantization usage
         quantization_config = ScalarQuantization(
-            config=ScalarQuantizationConfig(
-                scalar=ScalarType.INT8,
+            scalar=ScalarQuantizationConfig(
+                type=ScalarType.INT8,
                 quantile=0.99,
                 always_ram=True
             )
@@ -121,6 +123,13 @@ class QdrantService:
                 ),
             },
             quantization_config=quantization_config,
+        )
+        
+        # Create payload index for product_id
+        client.create_payload_index(
+            collection_name=collection_name,
+            field_name="product_id",
+            field_schema=PayloadSchemaType.KEYWORD,
         )
 
         return {
@@ -245,7 +254,8 @@ class QdrantService:
             points = []
 
             for chunk, text_emb in zip(chunks, text_embeddings):
-                point_id = f"{product_id}_chunk_{chunk['chunk_idx']}"
+                # Use deterministic UUID for chunks
+                point_id = str(uuid5(NAMESPACE_DNS, f"{product_id}_chunk_{chunk['chunk_idx']}"))
                 payload = {
                     "product_id": str(product_id),
                     "chunk_idx": chunk['chunk_idx'],
