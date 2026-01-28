@@ -214,7 +214,7 @@ $RECYCLE.BIN/
 .env.local
 .env.*.local
 #api key files
-buyright-485700-436c37e3f938.json
+buyright-485700-4d57aa7fdd7a.json
 # Database
 *.db
 *.sqlite

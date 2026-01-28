@@ -17,7 +17,8 @@ A FastAPI backend that suggests cheaper/better product alternatives based on use
 
 ### Tech Stack
 - **Backend**: FastAPI + PostgreSQL + Qdrant
-- **Embeddings**: Google Vertex AI (text-embedding-004 + multimodalembedding@001)
+- **Embeddings**: Google Vertex AI (multimodalembedding@001)
+- **Chunking**: Chonkie for semantic text splitting
 - **AI/ML**: LangGraph agents for recommendation workflow
 - **Clients**: Browser extension, Next.js web app, Ionic mobile app
 
@@ -89,17 +90,17 @@ QDRANT_API_KEY=
 QDRANT_COLLECTION_NAME=financial_products
 
 # Google Cloud / Vertex AI
-GOOGLE_CLOUD_PROJECT=your-gcp-project-id
+VERTEX_PROJECT_ID=your-gcp-project-id
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
 VERTEX_AI_LOCATION=us-central1
 
-# Embedding Models
-TEXT_EMBEDDING_MODEL=text-embedding-004
+# Embedding Models (multimodal@001 for both)
+TEXT_EMBEDDING_MODEL=multimodalembedding@001
 IMAGE_EMBEDDING_MODEL=multimodalembedding@001
 
-# Vector Dimensions
-TEXT_EMBEDDING_DIM=3072
-TEXT_EMBEDDING_DIMENSIONS=3072
+# Vector Dimensions (multimodal@001 uses 1408)
+TEXT_EMBEDDING_DIM=1408
+TEXT_EMBEDDING_DIMENSIONS=1408
 IMAGE_EMBEDDING_DIM=1408
 
 # Security
@@ -197,7 +198,7 @@ curl http://localhost:8000/debug/qdrant/collection
   "optimizer_status": "ok",
   "vectors_config": {
     "text_vector": {
-      "size": 3072,
+      "size": 1408,
       "distance": "COSINE"
     },
     "image_vector": {
@@ -229,6 +230,9 @@ product-recommendation-backend/
 │   ├── services/
 │   │   ├── __init__.py
 │   │   ├── health_service.py        # ✅ Health check logic
+│   │   ├── embedding_service.py     # ✅ Vertex AI embeddings
+│   │   ├── chunking_service.py      # ✅ Semantic text chunking
+│   │   ├── product_service.py       # ✅ Product CRUD operations
 │   │   └── qdrant_service.py        # ✅ ⭐ CORE: Qdrant operations
 │   ├── agents/
 │   │   └── recommendation_agent.py  # 🔜 LangGraph agent
@@ -252,6 +256,8 @@ product-recommendation-backend/
 │       └── xxxx_add_products_table.py   # ✅ Products table
 ├── tests/
 │   └── __init__.py
+├── test_service.py                  # ✅ Test for embedding/chunking
+├── exemple_usage.py                # ✅ End-to-end ingestion example
 ├── requirements.txt                 # ✅ All dependencies
 ├── alembic.ini                      # ✅ Alembic configuration
 ├── .env                             # Environment variables (not in git)
@@ -349,7 +355,7 @@ User ratings and comments on recommendations
 
 | Vector Name | Model | Dimensions | Purpose |
 |-------------|-------|------------|---------|
-| `text_vector` | text-embedding-004 | 3072 | Product title + description embeddings |
+| `text_vector` | multimodalembedding@001 | 1408 | Product title + chunked description |
 | `image_vector` | multimodalembedding@001 | 1408 | Product image embeddings |
 
 **Payload Schema:**
@@ -429,22 +435,16 @@ curl http://localhost:8000/debug/qdrant/collection
 # Open browser: http://localhost:6333/dashboard
 ```
 
-### Running Tests (Coming Soon)
+### Running Quick Tests
 ```bash
-# Install test dependencies
-pip install pytest pytest-asyncio httpx
+# Test Embedding and Chunking services
+python test_service.py
 
-# Run all tests
-pytest
-
-# Run specific test file
-pytest tests/test_qdrant.py
-
-# Run with coverage
-pytest --cov=app tests/
+# Test Complete Flow (SQL -> Chonkie -> Vertex -> Qdrant)
+python exemple_usage.py
 ```
 
-### Code Style
+### Verify Qdrant Collection
 ```bash
 # Install dev dependencies
 pip install black isort flake8
@@ -526,16 +526,16 @@ docker-compose down
 - [x] Lifespan events for collection initialization
 - [x] API documentation (Swagger/ReDoc)
 
-### 🚧 Phase 10-19: Embedding & Ingestion (Next)
-- [ ] Vertex AI embedding service (text-embedding-004)
-- [ ] Vertex AI image embedding service (multimodalembedding@001)
-- [ ] Product service (CRUD operations)
-- [ ] Chunking service for long descriptions
-- [ ] Upsert service for Qdrant
-- [ ] CSV ingestion endpoint
-- [ ] JSON product ingestion endpoint
-- [ ] Batch processing for embeddings
-- [ ] Error handling and retry logic
+### ✅ Phase 10-19: Embedding & Ingestion (Complete)
+- [x] Vertex AI embedding service (multimodalembedding@001)
+- [x] Vertex AI image embedding service (multimodalembedding@001)
+- [x] Product service (CRUD operations)
+- [x] Chunking service for long descriptions
+- [x] Upsert service for Qdrant
+- [x] CSV ingestion endpoint (Integrated in services)
+- [x] JSON product ingestion endpoint (Integrated in services)
+- [x] Batch processing for embeddings
+- [x] Error handling and retry logic
 
 ### 📋 Phase 20-24: Authentication & User Features
 - [ ] JWT authentication

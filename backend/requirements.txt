@@ -1,5 +1,5 @@
 # ==============================================================================
-# DEPENDENCIES - PHASE 7-9
+# DEPENDENCIES - PHASE 10-16
 # ==============================================================================
 
 # FastAPI & Server
@@ -20,3 +20,13 @@ qdrant-client==1.12.1
 
 # Google Cloud - Vertex AI Embeddings
 google-cloud-aiplatform==1.73.0
+
+# Chunking - Chonkie for semantic text splitting
+chonkie==0.3.1
+chonkie[st]
+chonkie[model2vec]
+
+
+# Image processing
+Pillow==10.4.0
+requests==2.32.3
