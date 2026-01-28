@@ -1,0 +1,22 @@
+# ==============================================================================
+# DEPENDENCIES - PHASE 7-9
+# ==============================================================================
+
+# FastAPI & Server
+fastapi==0.115.5
+uvicorn[standard]==0.34.0
+
+# Configuration
+pydantic-settings==2.6.1
+python-dotenv==1.0.1
+
+# Database - PostgreSQL
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.10
+alembic==1.14.0
+
+# Qdrant Vector Database (CORE - HACKATHON FOCUS)
+qdrant-client==1.12.1
+
+# Google Cloud - Vertex AI Embeddings
+google-cloud-aiplatform==1.73.0
