@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     
     # Authentication
     secret_key: str
+    # JWT Authentication
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30  # Default 30 minutes
     
     # Application
     debug: bool = False
